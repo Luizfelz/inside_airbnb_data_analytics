@@ -1,0 +1,184 @@
+version: 2
+
+models:
+  - name: tb_calendar_gold_avg_price_by_period
+    description: 'Tabela com informações referentes ao preço médio das acomodações por período (mês)'
+    columns:
+      - name: month
+        description: 'Coluna com o período (mês) analisado'
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+      - name: average_price_in_reais
+        description: 'Coluna com o preço médio, em Reais, das acomodações para aquele período (mês)'
+        tests:
+          - not_null
+      - name: average_adjusted_price_in_reais
+        description: 'Coluna com o preço ajustado médio, em Reais, das acomodações para aquele período (mês)'
+        tests:
+          - not_null
+
+  - name: tb_listings_gold_avg_price_by_num_accommodates
+    description: 'Tabela com informações referentes ao preço médio das acomodações por número de pessoas que a acomodação suporta'
+    columns:
+      - name: accommodates
+        description: 'Coluna com a informação referene a quantidade de pessoas que a acomodação suporta'
+        tests:
+          - not_null
+      - name: average_price_in_reais
+        description: 'Coluna com o preço médio, em Reais, para acomodações com aquele determinado número de pessoas suportado'
+        tests:
+          - not_null
+
+  - name: tb_listings_gold_avg_price_by_num_bedrooms
+    description: 'Tabela com informações referentes ao preço médio das acomodações de acordo com a quantidade de quartos disponíveis na acomodação'
+    columns:
+      - name: bedrooms
+        description: 'Coluna com a quantidade de quartos na acomodação'
+        tests:
+          - not_null
+      - name: average_price_in_reais
+        description: 'Coluna com o preço médio, em Reais, para acomodações com aquele determinado número de quartos.
+                      O número de quartos igual a zero significa que a acomodação não tem divisão interna para quartos, pois, a própria acomodação é um quarto'
+        tests:
+          - not_null
+
+  - name: tb_listings_gold_avg_price_by_property_type
+    description: 'Tabela com informações referentes ao preço médio das acomodações de acordo com o tipo da propiedade (ou da própria acomodação)'
+    columns:
+      - name: property_type
+        description: 'Coluna com o tipo da propriedade (acomodação)'
+        tests:
+          - not_null
+      - name: average_price_in_reais
+        description: 'Coluna com o preço médio, em Reais, para propriedades (acomodações) daquele tipo'
+        tests:
+          - not_null
+
+  - name: tb_listings_gold_avg_price_by_room_type
+    description: 'Tabela com informações referentes ao preço médio das acomodações de acordo com o tipo do quarto'
+    columns:
+      - name: room_type
+        description: 'Coluna com o tipo do quarto'
+        tests:
+        - not_null
+        - accepted_values:
+            values: ['Shared room','Private room','Entire home/apt','Hotel room']
+      - name: average_price_in_reais
+        description: 'Coluna com o preço médio, em Reais, de acordo com os tipos de quartos'
+        tests:
+          - not_null
+
+  - name: tb_listings_gold_total_acquired_by_listing
+    description: 'Tabela com o total do valor adquirido por ano para cada acomodação'
+    columns:
+      - name: listing_id
+        description: 'Coluna com o ID do listing (acomodação)'
+        tests:
+          - not_null
+      - name: year
+        description: 'Coluna com os anos em que a acomodação teve reservas'
+        tests:
+          - not_null
+      - name: total_acquired_in_reais
+        description: 'Coluna com o total, em Reais, adquiridos por ano para cada acomodação'
+        tests:
+          - not_null
+
+  - name: vw_listings_gold_all_hotel_rooms
+    description: 'View com informações do preço de acomodações que possuem o "room_type" como "Hotel room"'
+    columns:
+      - name: room_type
+        description: 'Coluna com o tipo do room'
+        tests:
+          - not_null
+      - name: price
+        description: 'Coluna com o preço'
+        tests:
+          - not_null
+
+  - name: vw_listings_gold_all_shared_rooms
+    description: 'View com informações do preço de acomodações que possuem o "room_type" como "Shared room"'
+    columns:
+      - name: room_type
+        description: 'Coluna com o tipo do room'
+        tests:
+          - not_null
+      - name: price
+        description: 'Coluna com o preço'
+        tests:
+          - not_null
+
+  - name: vw_listings_gold_distinct_property_types
+    description: 'View com todos os tipos diferentes de propriedades (acomodações)'
+    columns:
+      - name: property_types
+        description: 'Coluna com o tipo da propriedade (acomodação)'
+        tests:
+          - not_null
+
+  - name: vw_listings_gold_room_property_type_by_num_accommodates
+    description: 'View com as informações relacionadas especificamente a um listing (acomodação) específico'
+    columns:
+      - name: listing_id
+        description: 'Coluna com o ID do listing (acomodação)'
+        tests:
+          - not_null
+      - name: property_type
+        description: 'Coluna com a informação referente ao tipo da propriedade (casa/apto/etc), descritas pelo hoster'
+        tests:
+          - not_null
+      - name: room_type
+        description: 'Coluna com a informação referente ao tipo de acomodação (Entire home/apt, Private room, Shared room), descritas pelo hoster'
+        tests:
+          - not_null
+      - name: accommodates
+        description: 'Coluna com a informação referente a quantidade de pessoas máxima que a acomodação suporta'
+        tests:
+          - not_null
+      - name: bathrooms_text
+        description: 'Coluna com a informação referente a quantidade de banheiros na acomodação. Pode não ser especificado'
+        tests:
+          - not_null
+      - name: bedrooms
+        description: 'Coluna com a informação referente a quantidade de quartos presentes na acomodação'
+        tests:
+          - not_null
+      - name: last_review
+        description: 'Coluna com a data da última review feita para a acomodação'
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: date
+      - name: review_scores_rating
+        description: 'Coluna com a média de estrelas (votos) das reviews feitas para aquela acomodação. Valor varia entre 0 (nota mínima) e 5 (nota máxima)'
+        tests:
+          - not_null
+      - name: review_scores_accuracy
+        description: 'Coluna com a média dos votos das reviews feitas em relação a exatidão das informações da acomodação presentes no anúncio'
+        tests:
+          - not_null
+      - name: review_scores_cleanliness
+        description: 'Coluna com a média dos votos das reviews feitas em relação a limpeza da acomodação'
+        tests:
+          - not_null
+      - name: review_scores_checkin
+        description: 'Coluna com a média dos votos das reviews feitas em relação a facilidade de "check-in" da acomodação'
+        tests:
+          - not_null
+      - name: review_scores_communication
+        description: 'Coluna com a média dos votos das reviewws feitas em relação a comunicação entre hoster e hóspede'
+        tests:
+          - not_null
+      - name: review_scores_location
+        description: 'Coluna com a média dos votos das reviews feitas em relação a localização da acomodação'
+        tests:
+          - not_null
+      - name: review_scores_value
+        description: 'Coluna com a média dos votos das reviews feitas em relação ao custo-benefício da acomodação'
+        tests:
+          - not_null
+
+  - name: vw_listings-reviews_gold_accomodates_11_listing
+    description: 'View com as informações relacionadas especificamente a um listing ID (acomodação)'

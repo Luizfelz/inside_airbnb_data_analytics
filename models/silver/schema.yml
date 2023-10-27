@@ -1,0 +1,855 @@
+version: 2
+
+models:
+  - name: tb_calendar_silver
+    description: 'Tabela com informações referentes a disponibilidade, preço e regras de estadia das acomodações'
+    columns:
+      - name: listing_id
+        description: 'Coluna com a chave primária da tabela contendo o ID de cada "listing" (acomodação)'
+        tests:
+          - not_null
+      - name: date
+        description: 'Coluna com as possíveis datas disponíveis para reserva da acomodação'
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: date
+      - name: available
+        description: 'Coluna com a informação referente a disponibilidade ou não da acomodação. Disponível = 1, Não-Disponível = 0'
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: price
+        description: 'Coluna com a informação para reserva da acomodação. O valor é referente a 1 (uma) diária. Moeda: real (R$)'
+        tests:
+          - not_null
+      - name: adjusted_price
+        description: ''
+        tests:
+          - not_null
+      - name: minimum_nights
+        description: 'Coluna com a informação referente a quantidade mínima de diárias reservadas, se feitas naquele dia'
+        tests:
+          - not_null
+          - higher_or_equal_to_one
+      - name: maximum_nights
+        description: 'Coluna com a informação referente a quantidade máxima de diárias reservadas, se feitas naquele dia'
+        tests:
+          - not_null
+          - higher_or_equal_to_one
+
+  - name: tb_reviews_silver
+    description: 'Tabela com informações referentes às reviews feitas para as acomodações, com data, nome e id do revisor'
+    columns:
+      - name: listing_id
+        description: 'Coluna com o ID do listing (acomodação)'
+        tests:
+          - not_null
+      - name: review_id
+        description: 'Coluna com os IDs das reviews feitas para aquela listing'
+        tests:
+          - not_null
+      - name: review_date
+        description: 'Coluna com a data em que foi feita a review'
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: date
+      - name: reviewer_id
+        description: 'Coluna com o ID dos revisores (hóspedes) que fizeram a review'
+        tests:
+          - not_null
+      - name: reviewer_name
+        description: 'Coluna com o nome do revisor'
+        tests:
+          - not_null
+
+  - name: tb_listings_silver
+    description: 'Tabela com diversas informações detalhadas sobre a listing (acomodação)'
+    columns:
+      - name: listing_id
+        description: 'Coluna com o ID do listing (acomodação)'
+        tests:
+          - not_null
+      - name: scrape_id
+        description: 'Coluna com a informação referente a [data + horário] que a informação sobre aquela listing foi "minerada"'
+        tests:
+          - not_null
+      - name: last_scraped
+        description: 'Coluna com a data em que foi feita a última "mineração" daquela listing'
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: date
+      - name: name
+        description: 'Coluna com o nome do listing'
+        tests:
+          - not_null
+      - name: host_id
+        description: 'Coluna com o ID do hoster'
+        tests:
+          - not_null
+      - name: host_name
+        description: 'Coluna com o nome do hoster'
+        tests:
+          - not_null
+      - name: host_since
+        description: 'Coluna com a data de criação do usuário do hoster'
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: date
+      - name: host_location
+        description: 'Coluna com a localização (endereço) do hoster (cidade, estado, país ou sem localização especificada)'
+        tests:
+          - not_null
+      - name: host_response_time
+        description: 'Coluna com a informação referente ao tempo de resposta do hoster para possíveis dúvidas dos usuários'
+        tests:
+          - not_null
+      - name: host_response_rate
+        description: 'Coluna com a informação referente a taxa de resposta do hoster para as dúvidas dos usuários'
+        tests:
+          - not_null
+      - name: host_acceptance_rate
+        description: 'Coluna com a informação referente a taxa com que o hoster aceita os pedidos de reserva do listing'
+        tests:
+          - not_null
+      - name: host_is_superhost
+        description: 'Coluna com a informação referente ao hoster, se é ou não um superhoster. Superhoster são hosters experientes e com alta avaliação dos hóspedes'
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: host_total_listings_count
+        description: 'Coluna com a informação referente a quantidade total de listings que aquele hoster possui'
+        tests:
+          - not_null
+          - higher_or_equal_to_one
+      - name: host_has_profile_pic
+        description: 'Coluna com a informação referente ao hoster possuir ou não uma foto de perfil'
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: host_identity_verified
+        description: 'Coluna com a informação referente a identificação do hoster, se as informações prestadas à Airbnb foram verificadas ou não'
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: property_type
+        description: 'Coluna com a informação referente ao tipo da propriedade (casa/apto/etc), descritas pelo hoster'
+        tests:
+          - not_null
+      - name: room_type
+        description: 'Coluna com a informação referente ao tipo de acomodação (Entire home/apt, Private room, Shared room), descritas pelo hoster'
+        tests:
+          - not_null
+      - name: accommodates
+        description: 'Coluna com a informação referente a quantidade de pessoas máxima que a acomodação suporta'
+        tests:
+          - not_null
+      - name: bathrooms_text
+        description: 'Coluna com a informação referente a quantidade de banheiros na acomodação. Pode não ser especificado'
+        tests:
+          - not_null
+      - name: bedrooms
+        description: 'Coluna com a informação referente a quantidade de quartos presentes na acomodação'
+        tests:
+          - not_null
+      - name: beds
+        description: 'Coluna com a informação referente a quantidade de camas presentes na acomodação'
+        tests:
+          - not_null
+      - name: amenities
+        description: 'Coluna com a informação referente às cortesias que a acomodação oeferece'
+        tests:
+          - not_null
+      - name: price
+        description: 'Coluna com a informação referente ao preço para reserva de uma diária da acomodação. Moeda: real (R$)'
+        tests:
+          - not_null
+          - higher_or_equal_to_one
+      - name: minimum_nights
+        description: 'Coluna com a informação referente a quantidade mínima de diárias reservadas, se feitas naquele dia'
+        tests:
+          - not_null
+          - higher_or_equal_to_one
+      - name: maximum_nights
+        description: 'Coluna com a informação referente a quantidade máxima de diárias reservadas, se feitas naquele dia'
+        tests:
+          - not_null
+          - higher_or_equal_to_one
+      - name: has_availability
+        description: 'Coluna com a informação referente a disponibilidade para reserva da acomodação'
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: instant_bookable
+        description: 'Coluna com a informação referente a possibilidade de reserva instantânea da acomodação'
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: calendar_last_scraped
+        description: 'Coluna com a informação referente ao calendário de disponibilidade e reservas da acomodação'
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: date
+      - name: number_of_reviews
+        description: 'Coluna com a informação referente ao total de reviews que aquela acomodação possui'
+        tests:
+          - not_null
+      - name: first_review
+        description: 'Coluna com a data da primeira review feita para a acomodação'
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: date
+      - name: last_review
+        description: 'Coluna com a data da última review feita para a acomodação'
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: date
+      - name: review_scores_rating
+        description: 'Coluna com a média de estrelas (votos) das reviews feitas para aquela acomodação. Valor varia entre 0 (nota mínima) e 5 (nota máxima)'
+        tests:
+          - not_null
+      - name: review_scores_accuracy
+        description: 'Coluna com a média dos votos das reviews feitas em relação a exatidão das informações da acomodação presentes no anúncio'
+        tests:
+          - not_null
+      - name: review_scores_cleanliness
+        description: 'Coluna com a média dos votos das reviews feitas em relação a limpeza da acomodação'
+        tests:
+          - not_null
+      - name: review_scores_checkin
+        description: 'Coluna com a média dos votos das reviews feitas em relação a facilidade de "check-in" da acomodação'
+        tests:
+          - not_null
+      - name: review_scores_communication
+        description: 'Coluna com a média dos votos das reviewws feitas em relação a comunicação entre hoster e hóspede'
+        tests:
+          - not_null
+      - name: review_scores_location
+        description: 'Coluna com a média dos votos das reviews feitas em relação a localização da acomodação'
+        tests:
+          - not_null
+      - name: review_scores_value
+        description: 'Coluna com a média dos votos das reviews feitas em relação ao custo-benefício da acomodação'
+        tests:
+          - not_null
+      - name: reviews_per_month
+        description: 'Coluna com a média mensal de reviews feitas para a acomodação, desde o início da listagem'
+        tests:
+          - not_null
+  
+  - name: vw_listings_silver_acceptance_rate_60
+    description: 'View com informações gerais com a condição de "host_acceptance_rate" maior que 60%'
+    columns:
+      - name: listing_id
+        description: 'Coluna com o ID do listing (acomodação)'
+        tests:
+          - not_null
+      - name: scrape_id
+        description: 'Coluna com a informação referente a [data + horário] que a informação sobre aquela listing foi "minerada"'
+        tests:
+          - not_null
+      - name: last_scraped
+        description: 'Coluna com a data em que foi feita a última "mineração" daquela listing'
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: date
+      - name: name
+        description: 'Coluna com o nome do listing'
+        tests:
+          - not_null
+      - name: host_id
+        description: 'Coluna com o ID do hoster'
+        tests:
+          - not_null
+      - name: host_name
+        description: 'Coluna com o nome do hoster'
+        tests:
+          - not_null
+      - name: host_since
+        description: 'Coluna com a data de criação do usuário do hoster'
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: date
+      - name: host_location
+        description: 'Coluna com a localização (endereço) do hoster (cidade, estado, país ou sem localização especificada)'
+        tests:
+          - not_null
+      - name: host_response_time
+        description: 'Coluna com a informação referente ao tempo de resposta do hoster para possíveis dúvidas dos usuários'
+        tests:
+          - not_null
+      - name: host_response_rate
+        description: 'Coluna com a informação referente a taxa de resposta do hoster para as dúvidas dos usuários'
+        tests:
+          - not_null
+      - name: host_acceptance_rate
+        description: 'Coluna com a informação referente a taxa com que o hoster aceita os pedidos de reserva do listing'
+        tests:
+          - not_null
+      - name: host_is_superhost
+        description: 'Coluna com a informação referente ao hoster, se é ou não um superhoster. Superhoster são hosters experientes e com alta avaliação dos hóspedes'
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: host_total_listings_count
+        description: 'Coluna com a informação referente a quantidade total de listings que aquele hoster possui'
+        tests:
+          - not_null
+          - higher_or_equal_to_one
+      - name: host_has_profile_pic
+        description: 'Coluna com a informação referente ao hoster possuir ou não uma foto de perfil'
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: host_identity_verified
+        description: 'Coluna com a informação referente a identificação do hoster, se as informações prestadas à Airbnb foram verificadas ou não'
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: property_type
+        description: 'Coluna com a informação referente ao tipo da propriedade (casa/apto/etc), descritas pelo hoster'
+        tests:
+          - not_null
+      - name: room_type
+        description: 'Coluna com a informação referente ao tipo de acomodação (Entire home/apt, Private room, Shared room), descritas pelo hoster'
+        tests:
+          - not_null
+      - name: accommodates
+        description: 'Coluna com a informação referente a quantidade de pessoas máxima que a acomodação suporta'
+        tests:
+          - not_null
+      - name: bathrooms_text
+        description: 'Coluna com a informação referente a quantidade de banheiros na acomodação. Pode não ser especificado'
+        tests:
+          - not_null
+      - name: bedrooms
+        description: 'Coluna com a informação referente a quantidade de quartos presentes na acomodação'
+        tests:
+          - not_null
+      - name: beds
+        description: 'Coluna com a informação referente a quantidade de camas presentes na acomodação'
+        tests:
+          - not_null
+      - name: amenities
+        description: 'Coluna com a informação referente às cortesias que a acomodação oeferece'
+        tests:
+          - not_null
+      - name: price
+        description: 'Coluna com a informação referente ao preço para reserva de uma diária da acomodação. Moeda: real (R$)'
+        tests:
+          - not_null
+          - higher_or_equal_to_one
+      - name: minimum_nights
+        description: 'Coluna com a informação referente a quantidade mínima de diárias reservadas, se feitas naquele dia'
+        tests:
+          - not_null
+          - higher_or_equal_to_one
+      - name: maximum_nights
+        description: 'Coluna com a informação referente a quantidade máxima de diárias reservadas, se feitas naquele dia'
+        tests:
+          - not_null
+          - higher_or_equal_to_one
+      - name: has_availability
+        description: 'Coluna com a informação referente a disponibilidade para reserva da acomodação'
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: instant_bookable
+        description: 'Coluna com a informação referente a possibilidade de reserva instantânea da acomodação'
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: calendar_last_scraped
+        description: 'Coluna com a informação referente ao calendário de disponibilidade e reservas da acomodação'
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: date
+      - name: number_of_reviews
+        description: 'Coluna com a informação referente ao total de reviews que aquela acomodação possui'
+        tests:
+          - not_null
+      - name: first_review
+        description: 'Coluna com a data da primeira review feita para a acomodação'
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: date
+      - name: last_review
+        description: 'Coluna com a data da última review feita para a acomodação'
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: date
+      - name: review_scores_rating
+        description: 'Coluna com a média de estrelas (votos) das reviews feitas para aquela acomodação. Valor varia entre 0 (nota mínima) e 5 (nota máxima)'
+        tests:
+          - not_null
+      - name: review_scores_accuracy
+        description: 'Coluna com a média dos votos das reviews feitas em relação a exatidão das informações da acomodação presentes no anúncio'
+        tests:
+          - not_null
+      - name: review_scores_cleanliness
+        description: 'Coluna com a média dos votos das reviews feitas em relação a limpeza da acomodação'
+        tests:
+          - not_null
+      - name: review_scores_checkin
+        description: 'Coluna com a média dos votos das reviews feitas em relação a facilidade de "check-in" da acomodação'
+        tests:
+          - not_null
+      - name: review_scores_communication
+        description: 'Coluna com a média dos votos das reviewws feitas em relação a comunicação entre hoster e hóspede'
+        tests:
+          - not_null
+      - name: review_scores_location
+        description: 'Coluna com a média dos votos das reviews feitas em relação a localização da acomodação'
+        tests:
+          - not_null
+      - name: review_scores_value
+        description: 'Coluna com a média dos votos das reviews feitas em relação ao custo-benefício da acomodação'
+        tests:
+          - not_null
+      - name: reviews_per_month
+        description: 'Coluna com a média mensal de reviews feitas para a acomodação, desde o início da listagem'
+        tests:
+          - not_null
+
+  - name: vw_listings_silver_avg_score_by_num_of_amenities
+    description: 'View com informações sobre a média dos scores para cada acomodação, com base na quantidade de "amenities" da acomodação'
+    columns:
+      - name: listing_id
+        description: 'Coluna com o ID do listing (acomodação)'
+        tests:
+          - not_null
+      - name: amount_amenities
+        description: 'Coluna com a informação referente à quantidade de cortesias que a acomodação oferece'
+        tests:
+          - not_null
+      - name: avg_review_scores_rating
+        description: 'Coluna com a média de estrelas (votos) das reviews feitas para aquela acomodação. Valor varia entre 0 (nota mínima) e 5 (nota máxima)'
+        tests:
+          - not_null
+      - name: avg_review_scores_accuracy
+        description: 'Coluna com a média dos votos das reviews feitas em relação a exatidão das informações da acomodação presentes no anúncio'
+        tests:
+          - not_null
+      - name: avg_review_scores_cleanliness
+        description: 'Coluna com a média dos votos das reviews feitas em relação a limpeza da acomodação'
+        tests:
+          - not_null
+      - name: avg_review_scores_checkin
+        description: 'Coluna com a média dos votos das reviews feitas em relação a facilidade de "check-in" da acomodação'
+        tests:
+          - not_null
+      - name: avg_review_scores_communication
+        description: 'Coluna com a média dos votos das reviewws feitas em relação a comunicação entre hoster e hóspede'
+        tests:
+          - not_null
+      - name: avg_review_scores_location
+        description: 'Coluna com a média dos votos das reviews feitas em relação a localização da acomodação'
+        tests:
+          - not_null
+      - name: avg_review_scores_value
+        description: 'Coluna com a média dos votos das reviews feitas em relação ao custo-benefício da acomodação'
+        tests:
+          - not_null
+
+  - name: vw_listings_silver_distinct_num_reviews
+    description: 'View com informações que sumariza a quantidade de acomodações que possuem determinada quantidade de reviews'
+    columns:
+      - name: number_of_reviews
+        description: 'Coluna com a quantidade de reviews'
+        tests:
+          - not_null
+      - name: number_of_listings_id
+        description: 'Coluna com a quantidade de acomodações com aquela determinada quantidade de reviews'
+        tests:
+          - not_null
+          - higher_or_equal_to_one
+
+  - name: vw_listings_silver_more_than_20_reviews
+    description: 'View com informações gerais para todas as acomodações que possuem mais de 20 reviews feitas'
+    columns:
+      - name: listing_id
+        description: 'Coluna com o ID do listing (acomodação)'
+        tests:
+          - not_null
+      - name: scrape_id
+        description: 'Coluna com a informação referente a [data + horário] que a informação sobre aquela listing foi "minerada"'
+        tests:
+          - not_null
+      - name: last_scraped
+        description: 'Coluna com a data em que foi feita a última "mineração" daquela listing'
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: date
+      - name: name
+        description: 'Coluna com o nome do listing'
+        tests:
+          - not_null
+      - name: host_id
+        description: 'Coluna com o ID do hoster'
+        tests:
+          - not_null
+      - name: host_name
+        description: 'Coluna com o nome do hoster'
+        tests:
+          - not_null
+      - name: host_since
+        description: 'Coluna com a data de criação do usuário do hoster'
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: date
+      - name: host_location
+        description: 'Coluna com a localização (endereço) do hoster (cidade, estado, país ou sem localização especificada)'
+        tests:
+          - not_null
+      - name: host_response_time
+        description: 'Coluna com a informação referente ao tempo de resposta do hoster para possíveis dúvidas dos usuários'
+        tests:
+          - not_null
+      - name: host_response_rate
+        description: 'Coluna com a informação referente a taxa de resposta do hoster para as dúvidas dos usuários'
+        tests:
+          - not_null
+      - name: host_acceptance_rate
+        description: 'Coluna com a informação referente a taxa com que o hoster aceita os pedidos de reserva do listing'
+        tests:
+          - not_null
+      - name: host_is_superhost
+        description: 'Coluna com a informação referente ao hoster, se é ou não um superhoster. Superhoster são hosters experientes e com alta avaliação dos hóspedes'
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: host_total_listings_count
+        description: 'Coluna com a informação referente a quantidade total de listings que aquele hoster possui'
+        tests:
+          - not_null
+          - higher_or_equal_to_one
+      - name: host_has_profile_pic
+        description: 'Coluna com a informação referente ao hoster possuir ou não uma foto de perfil'
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: host_identity_verified
+        description: 'Coluna com a informação referente a identificação do hoster, se as informações prestadas à Airbnb foram verificadas ou não'
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: property_type
+        description: 'Coluna com a informação referente ao tipo da propriedade (casa/apto/etc), descritas pelo hoster'
+        tests:
+          - not_null
+      - name: room_type
+        description: 'Coluna com a informação referente ao tipo de acomodação (Entire home/apt, Private room, Shared room), descritas pelo hoster'
+        tests:
+          - not_null
+      - name: accommodates
+        description: 'Coluna com a informação referente a quantidade de pessoas máxima que a acomodação suporta'
+        tests:
+          - not_null
+      - name: bathrooms_text
+        description: 'Coluna com a informação referente a quantidade de banheiros na acomodação. Pode não ser especificado'
+        tests:
+          - not_null
+      - name: bedrooms
+        description: 'Coluna com a informação referente a quantidade de quartos presentes na acomodação'
+        tests:
+          - not_null
+      - name: beds
+        description: 'Coluna com a informação referente a quantidade de camas presentes na acomodação'
+        tests:
+          - not_null
+      - name: amenities
+        description: 'Coluna com a informação referente às cortesias que a acomodação oeferece'
+        tests:
+          - not_null
+      - name: price
+        description: 'Coluna com a informação referente ao preço para reserva de uma diária da acomodação. Moeda: real (R$)'
+        tests:
+          - not_null
+          - higher_or_equal_to_one
+      - name: minimum_nights
+        description: 'Coluna com a informação referente a quantidade mínima de diárias reservadas, se feitas naquele dia'
+        tests:
+          - not_null
+          - higher_or_equal_to_one
+      - name: maximum_nights
+        description: 'Coluna com a informação referente a quantidade máxima de diárias reservadas, se feitas naquele dia'
+        tests:
+          - not_null
+          - higher_or_equal_to_one
+      - name: has_availability
+        description: 'Coluna com a informação referente a disponibilidade para reserva da acomodação'
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: instant_bookable
+        description: 'Coluna com a informação referente a possibilidade de reserva instantânea da acomodação'
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: calendar_last_scraped
+        description: 'Coluna com a informação referente ao calendário de disponibilidade e reservas da acomodação'
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: date
+      - name: number_of_reviews
+        description: 'Coluna com a informação referente ao total de reviews que aquela acomodação possui'
+        tests:
+          - not_null
+      - name: first_review
+        description: 'Coluna com a data da primeira review feita para a acomodação'
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: date
+      - name: last_review
+        description: 'Coluna com a data da última review feita para a acomodação'
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: date
+      - name: review_scores_rating
+        description: 'Coluna com a média de estrelas (votos) das reviews feitas para aquela acomodação. Valor varia entre 0 (nota mínima) e 5 (nota máxima)'
+        tests:
+          - not_null
+      - name: review_scores_accuracy
+        description: 'Coluna com a média dos votos das reviews feitas em relação a exatidão das informações da acomodação presentes no anúncio'
+        tests:
+          - not_null
+      - name: review_scores_cleanliness
+        description: 'Coluna com a média dos votos das reviews feitas em relação a limpeza da acomodação'
+        tests:
+          - not_null
+      - name: review_scores_checkin
+        description: 'Coluna com a média dos votos das reviews feitas em relação a facilidade de "check-in" da acomodação'
+        tests:
+          - not_null
+      - name: review_scores_communication
+        description: 'Coluna com a média dos votos das reviewws feitas em relação a comunicação entre hoster e hóspede'
+        tests:
+          - not_null
+      - name: review_scores_location
+        description: 'Coluna com a média dos votos das reviews feitas em relação a localização da acomodação'
+        tests:
+          - not_null
+      - name: review_scores_value
+        description: 'Coluna com a média dos votos das reviews feitas em relação ao custo-benefício da acomodação'
+        tests:
+          - not_null
+      - name: reviews_per_month
+        description: 'Coluna com a média mensal de reviews feitas para a acomodação, desde o início da listagem'
+        tests:
+          - not_null
+
+  - name: vw_listings_silver_no_host_response
+    description: 'View com informações gerais relacionadas as acomodações que possuem 0% de "host_response_rate"'
+    columns:
+      - name: listing_id
+        description: 'Coluna com o ID do listing (acomodação)'
+        tests:
+          - not_null
+      - name: scrape_id
+        description: 'Coluna com a informação referente a [data + horário] que a informação sobre aquela listing foi "minerada"'
+        tests:
+          - not_null
+      - name: last_scraped
+        description: 'Coluna com a data em que foi feita a última "mineração" daquela listing'
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: date
+      - name: name
+        description: 'Coluna com o nome do listing'
+        tests:
+          - not_null
+      - name: host_id
+        description: 'Coluna com o ID do hoster'
+        tests:
+          - not_null
+      - name: host_name
+        description: 'Coluna com o nome do hoster'
+        tests:
+          - not_null
+      - name: host_since
+        description: 'Coluna com a data de criação do usuário do hoster'
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: date
+      - name: host_location
+        description: 'Coluna com a localização (endereço) do hoster (cidade, estado, país ou sem localização especificada)'
+        tests:
+          - not_null
+      - name: host_response_time
+        description: 'Coluna com a informação referente ao tempo de resposta do hoster para possíveis dúvidas dos usuários'
+        tests:
+          - not_null
+      - name: host_response_rate
+        description: 'Coluna com a informação referente a taxa de resposta do hoster para as dúvidas dos usuários'
+        tests:
+          - not_null
+      - name: host_acceptance_rate
+        description: 'Coluna com a informação referente a taxa com que o hoster aceita os pedidos de reserva do listing'
+        tests:
+          - not_null
+      - name: host_is_superhost
+        description: 'Coluna com a informação referente ao hoster, se é ou não um superhoster. Superhoster são hosters experientes e com alta avaliação dos hóspedes'
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: host_total_listings_count
+        description: 'Coluna com a informação referente a quantidade total de listings que aquele hoster possui'
+        tests:
+          - not_null
+          - higher_or_equal_to_one
+      - name: host_has_profile_pic
+        description: 'Coluna com a informação referente ao hoster possuir ou não uma foto de perfil'
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: host_identity_verified
+        description: 'Coluna com a informação referente a identificação do hoster, se as informações prestadas à Airbnb foram verificadas ou não'
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: property_type
+        description: 'Coluna com a informação referente ao tipo da propriedade (casa/apto/etc), descritas pelo hoster'
+        tests:
+          - not_null
+      - name: room_type
+        description: 'Coluna com a informação referente ao tipo de acomodação (Entire home/apt, Private room, Shared room), descritas pelo hoster'
+        tests:
+          - not_null
+      - name: accommodates
+        description: 'Coluna com a informação referente a quantidade de pessoas máxima que a acomodação suporta'
+        tests:
+          - not_null
+      - name: bathrooms_text
+        description: 'Coluna com a informação referente a quantidade de banheiros na acomodação. Pode não ser especificado'
+        tests:
+          - not_null
+      - name: bedrooms
+        description: 'Coluna com a informação referente a quantidade de quartos presentes na acomodação'
+        tests:
+          - not_null
+      - name: beds
+        description: 'Coluna com a informação referente a quantidade de camas presentes na acomodação'
+        tests:
+          - not_null
+      - name: amenities
+        description: 'Coluna com a informação referente às cortesias que a acomodação oeferece'
+        tests:
+          - not_null
+      - name: price
+        description: 'Coluna com a informação referente ao preço para reserva de uma diária da acomodação. Moeda: real (R$)'
+        tests:
+          - not_null
+          - higher_or_equal_to_one
+      - name: minimum_nights
+        description: 'Coluna com a informação referente a quantidade mínima de diárias reservadas, se feitas naquele dia'
+        tests:
+          - not_null
+          - higher_or_equal_to_one
+      - name: maximum_nights
+        description: 'Coluna com a informação referente a quantidade máxima de diárias reservadas, se feitas naquele dia'
+        tests:
+          - not_null
+          - higher_or_equal_to_one
+      - name: has_availability
+        description: 'Coluna com a informação referente a disponibilidade para reserva da acomodação'
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: instant_bookable
+        description: 'Coluna com a informação referente a possibilidade de reserva instantânea da acomodação'
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: calendar_last_scraped
+        description: 'Coluna com a informação referente ao calendário de disponibilidade e reservas da acomodação'
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: date
+      - name: number_of_reviews
+        description: 'Coluna com a informação referente ao total de reviews que aquela acomodação possui'
+        tests:
+          - not_null
+      - name: first_review
+        description: 'Coluna com a data da primeira review feita para a acomodação'
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: date
+      - name: last_review
+        description: 'Coluna com a data da última review feita para a acomodação'
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: date
+      - name: review_scores_rating
+        description: 'Coluna com a média de estrelas (votos) das reviews feitas para aquela acomodação. Valor varia entre 0 (nota mínima) e 5 (nota máxima)'
+        tests:
+          - not_null
+      - name: review_scores_accuracy
+        description: 'Coluna com a média dos votos das reviews feitas em relação a exatidão das informações da acomodação presentes no anúncio'
+        tests:
+          - not_null
+      - name: review_scores_cleanliness
+        description: 'Coluna com a média dos votos das reviews feitas em relação a limpeza da acomodação'
+        tests:
+          - not_null
+      - name: review_scores_checkin
+        description: 'Coluna com a média dos votos das reviews feitas em relação a facilidade de "check-in" da acomodação'
+        tests:
+          - not_null
+      - name: review_scores_communication
+        description: 'Coluna com a média dos votos das reviewws feitas em relação a comunicação entre hoster e hóspede'
+        tests:
+          - not_null
+      - name: review_scores_location
+        description: 'Coluna com a média dos votos das reviews feitas em relação a localização da acomodação'
+        tests:
+          - not_null
+      - name: review_scores_value
+        description: 'Coluna com a média dos votos das reviews feitas em relação ao custo-benefício da acomodação'
+        tests:
+          - not_null
+      - name: reviews_per_month
+        description: 'Coluna com a média mensal de reviews feitas para a acomodação, desde o início da listagem'
+        tests:
+          - not_null
